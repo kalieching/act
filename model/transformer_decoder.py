@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from utils import sinusoidal_pos_encoding
+from model.utils import sinusoidal_pos_encoding
 
 class ACTDecoder(nn.Module):
     """

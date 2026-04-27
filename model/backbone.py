@@ -52,18 +52,18 @@ class ImageBackbone(nn.Module):
         # 0.02 initialization ensures positional embeddings start small so model can learn to use them without overwhelming actual image features early in training
         self.pos_embed = nn.Parameter(torch.randn(1, d_model, 7, 7) * 0.02)
 
-        def forward(self, x):
-            B, num_cams, C, H, W = x.shape # x : (B, num_cams, C, H, W)
+    def forward(self, x):
+        B, num_cams, C, H, W = x.shape # x : (B, num_cams, C, H, W)
 
-            # merge batch + camera dims for efficient parallel processing
-            x = rearrange(x, 'b n c h w -> (b n) c h w')
+        # merge batch + camera dims for efficient parallel processing
+        x = rearrange(x, 'b n c h w -> (b n) c h w')
 
-            feat = self.body(x) # (B * num_cams, 512, 7, 7), now have 7x7 grid of 512-dim feature vectors per image
-            feat = self.proj(feat) # (B * num_cams, d_model, 7, 7), projected from 512 -> d_model = 256 channels
-            feat = feat + self.pos_embed # add spatial position signal
+        feat = self.body(x) # (B * num_cams, 512, 7, 7), now have 7x7 grid of 512-dim feature vectors per image
+        feat = self.proj(feat) # (B * num_cams, d_model, 7, 7), projected from 512 -> d_model = 256 channels
+        feat = feat + self.pos_embed # add spatial position signal
 
-            # flatten spatial grid into sequence of tokens and seperate the batch and camera dims back out
-            feat = rearrange(feat, '(b n) d h w -> b (n h w) d', b=B, n=num_cams)
-            # each toen is a 256-dim vector describing one spatial location in one camera view, and the sequence is the concatenation of all 7x7 grid locations across all camera views
-            # output: (B, num_cams * 7 * 7, d_model)
-            return feat
+        # flatten spatial grid into sequence of tokens and seperate the batch and camera dims back out
+        feat = rearrange(feat, '(b n) d h w -> b (n h w) d', b=B, n=num_cams)
+        # each toen is a 256-dim vector describing one spatial location in one camera view, and the sequence is the concatenation of all 7x7 grid locations across all camera views
+        # output: (B, num_cams * 7 * 7, d_model)
+        return feat
